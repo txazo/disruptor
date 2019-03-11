@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class MessageThreadFactory implements ThreadFactory {
 
-    private AtomicInteger incr = new AtomicInteger();
+    private AtomicInteger incr = new AtomicInteger(0);
 
     @Override
     public Thread newThread(Runnable r) {
-        return new Thread(r, "disruptor-thread-" + incr.incrementAndGet());
+        return new Thread(r, String.format("disruptor-thread-%02d", incr.incrementAndGet()));
     }
 
 }

@@ -12,12 +12,14 @@ public class DisruptorTest {
     public static void main(String[] args) {
         Disruptor<MessageEvent> disruptor = new Disruptor<>(
                 new MessageEventFactory(), 1024, Executors.newFixedThreadPool(10, new MessageThreadFactory()),
-                ProducerType.SINGLE, new BlockingWaitStrategy()
+                ProducerType.MULTI, new BlockingWaitStrategy()
         );
         disruptor.handleEventsWith(new MessageEventHandler());
-        RingBuffer<MessageEvent> ringBuffer = disruptor.start();
+        disruptor.start();
+
+        RingBuffer<MessageEvent> ringBuffer = disruptor.getRingBuffer();
         MessageEventProducer producer = new MessageEventProducer(ringBuffer);
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 10000; i++) {
             producer.onData(String.valueOf(i));
         }
     }
