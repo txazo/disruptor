@@ -12,7 +12,7 @@ public class MessageThreadFactory implements ThreadFactory {
 
     @Override
     public Thread newThread(Runnable r) {
-        return new Thread(r, String.format("disruptor-thread-%02d", incr.incrementAndGet()));
+        return new Thread(r, String.format("disruptor-executor-%02d", incr.incrementAndGet()));
     }
 
 }

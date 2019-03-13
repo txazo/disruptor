@@ -33,20 +33,16 @@ public class DisruptorTest {
     // 单生产者单消费者
     @Test
     public void test1() {
-        initDisruptor(1024, 10, ProducerType.SINGLE);
+        initDisruptor(16, 2, ProducerType.SINGLE);
         disruptor.handleEventsWith(
                 (event, sequence, endOfBatch) -> {
-                    System.out.println(String.format("[%s] EventHandler1 onEvent %s", Thread.currentThread().getName(), event));
-                    Thread.sleep(10);
-                },
-                (event, sequence, endOfBatch) -> {
-                    System.out.println(String.format("[%s] EventHandler2 onEvent %s", Thread.currentThread().getName(), event));
+                    System.out.println(String.format("[%s] EventHandler onEvent %s", Thread.currentThread().getName(), event));
                     Thread.sleep(10);
                 }
         );
         ringBuffer = disruptor.start();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), String.valueOf(i));
         }
     }
@@ -54,18 +50,19 @@ public class DisruptorTest {
     // 单生产者多消费者
     @Test
     public void test2() {
-        initDisruptor(1024, 10, ProducerType.SINGLE);
-        disruptor.handleEventsWith((event, sequence, endOfBatch) ->
-                System.out.println(String.format("[%s] onEvent %s", Thread.currentThread().getName(), event))
-        );
+        initDisruptor(16, 2, ProducerType.SINGLE);
         disruptor.handleEventsWithWorkerPool(
                 event -> {
-                    System.out.println(String.format("[%s] EventHandler onEvent %s", Thread.currentThread().getName(), event));
+                    System.out.println(String.format("[%s] EventHandlerGroup EventHandler1 onEvent %s", Thread.currentThread().getName(), event));
+                    Thread.sleep(10);
+                },
+                event -> {
+                    System.out.println(String.format("[%s] EventHandlerGroup EventHandler2 onEvent %s", Thread.currentThread().getName(), event));
                     Thread.sleep(10);
                 });
         ringBuffer = disruptor.start();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), String.valueOf(i));
         }
     }

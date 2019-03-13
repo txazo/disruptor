@@ -26,6 +26,8 @@ import com.lmax.disruptor.util.ThreadHints;
  * <p>
  * This strategy can be used when throughput and low-latency are not as important as CPU resource.
  */
+
+// 阻塞策略(Lock + Condition)
 public final class BlockingWaitStrategy implements WaitStrategy
 {
     private final Lock lock = new ReentrantLock();
