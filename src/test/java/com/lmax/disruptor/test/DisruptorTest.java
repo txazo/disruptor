@@ -7,11 +7,12 @@ import com.lmax.disruptor.dsl.ProducerType;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
 /**
  * 生产者: 单生产者、多生产者
- * 消费者: 单消费者、多消费者、消费者群组
+ * 消费者: 单消费者、消费者组
  */
 public class DisruptorTest {
 
@@ -30,39 +31,49 @@ public class DisruptorTest {
         disruptor.shutdown();
     }
 
-    // 单生产者单消费者
+    // 多生产者多消费者
     @Test
     public void test1() {
-        initDisruptor(16, 2, ProducerType.SINGLE);
-        disruptor.handleEventsWith(
-                (event, sequence, endOfBatch) -> {
-                    System.out.println(String.format("[%s] EventHandler onEvent %s", Thread.currentThread().getName(), event));
-                    Thread.sleep(10);
-                }
-        );
+        initDisruptor(16, 2, ProducerType.MULTI);
+        disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
+            System.out.println(String.format("[%s] EventHandler1 onEvent %s", Thread.currentThread().getName(), event));
+            Thread.sleep(500);
+        }).then((event, sequence, endOfBatch) -> {
+            System.out.println(String.format("[%s] EventHandler2 onEvent %s", Thread.currentThread().getName(), event));
+            Thread.sleep(100);
+        });
         ringBuffer = disruptor.start();
 
-        for (int i = 0; i < 100; i++) {
-            ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), String.valueOf(i));
-        }
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> {
+                    for (int i = 1; i <= 10000; i++) {
+                        ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), "1-" + String.valueOf(i));
+                    }
+                }),
+                CompletableFuture.runAsync(() -> {
+                    for (int i = 1; i <= 10000; i++) {
+                        ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), "2-" + String.valueOf(i));
+                    }
+                })
+        ).join();
     }
 
-    // 单生产者多消费者
+    // 单生产者消费者组
     @Test
     public void test2() {
         initDisruptor(16, 2, ProducerType.SINGLE);
         disruptor.handleEventsWithWorkerPool(
                 event -> {
-                    System.out.println(String.format("[%s] EventHandlerGroup EventHandler1 onEvent %s", Thread.currentThread().getName(), event));
-                    Thread.sleep(10);
+                    System.out.println(String.format("[%s] WorkerPool WorkHandler1 onEvent %s", Thread.currentThread().getName(), event));
+                    Thread.sleep(1000);
                 },
                 event -> {
-                    System.out.println(String.format("[%s] EventHandlerGroup EventHandler2 onEvent %s", Thread.currentThread().getName(), event));
-                    Thread.sleep(10);
+                    System.out.println(String.format("[%s] WorkerPool WorkHandler2 onEvent %s", Thread.currentThread().getName(), event));
+                    Thread.sleep(1000);
                 });
         ringBuffer = disruptor.start();
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 1; i <= 10000; i++) {
             ringBuffer.publishEvent((event, sequence, message) -> event.setMessage(message), String.valueOf(i));
         }
     }

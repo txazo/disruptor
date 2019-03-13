@@ -121,12 +121,15 @@ public final class MultiProducerSequencer extends AbstractSequencer
 
         do
         {
+            // RingBuffer游标
             current = cursor.get();
+            // 申请的序列值
             next = current + n;
 
             long wrapPoint = next - bufferSize;
+            // 最慢消费者序列值
             long cachedGatingSequence = gatingSequenceCache.get();
-
+            // 生产者追上最慢消费者
             if (wrapPoint > cachedGatingSequence || cachedGatingSequence > current)
             {
                 long gatingSequence = Util.getMinimumSequence(gatingSequences, current);
